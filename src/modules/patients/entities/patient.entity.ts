@@ -1,3 +1,4 @@
+import { Appointment } from '../../appointments/entities/appointment.entity';
 import {
   Entity,
   PrimaryGeneratedColumn,
@@ -5,6 +6,7 @@ import {
   CreateDateColumn,
   UpdateDateColumn,
   Index,
+  OneToMany,
 } from 'typeorm';
 
 @Entity({ name: 'patients' })
@@ -32,6 +34,12 @@ export class Patient {
     nullable: false,
   })
   doctorPreference: string;
+
+  @OneToMany(
+    () => Appointment,
+    (appointment) => appointment.patient
+  )
+  appointments?: Appointment[];
 
   @CreateDateColumn({ name: 'created_at', type: 'timestamp', default: () => "CURRENT_TIMESTAMP" })
   createdAt: Date;
