@@ -1,35 +1,86 @@
 import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { DeleteResult, Like, Repository } from 'typeorm';
+import { DataSource, DeepPartial, DeleteResult, Like, Repository } from 'typeorm';
 import { Patient } from './entities/patient.entity';
 import { CreatePatientDto } from './dto/create-patient.dto';
 import { UpdatePatientDto } from './dto/update-patient.dto';
+import { Appointment } from '../appointments/entities/appointment.entity';
 
 @Injectable()
 export class PatientsService {
   constructor(
     @InjectRepository(Patient)
     private readonly patientRepo: Repository<Patient>,
+    private readonly dataSource: DataSource,
   ) { }
 
-  async create(dto: CreatePatientDto): Promise<Patient> {
-    const existingPatient = await this.patientRepo.findOne({
-      where: [{ email: dto.email }, { phone: dto.phone }],
-    });
+  async create(
+    dto: CreatePatientDto,
+  ): Promise<{ patient: Patient; appointment: Appointment }> {
+    const {
+      firstName,
+      lastName,
+      email,
+      phone,
+      doctorPreference,
+      appointmentDate,
+      appointmentDescription,
+      appointmentTitle,
+    } = dto;
 
-    if (existingPatient) {
-      const conflicts: string[] = [];
-      if (existingPatient?.email === dto.email) conflicts.push('email');
-      if (existingPatient.phone === dto.phone) conflicts.push('phone');
+    try {
+      return await this.dataSource.transaction(async (manager) => {
+        const existingPatient = await manager.findOne(Patient, {
+          where: [{ email }, { phone }],
+        });
 
-      throw new ConflictException(
-        `Patient with the same ${conflicts.join(' and ')} already exists`,
-      );
+        if (existingPatient) {
+          const conflicts: string[] = [];
+          if (existingPatient.email === email) conflicts.push('email');
+          if (existingPatient.phone === phone) conflicts.push('phone');
+
+          throw new ConflictException(
+            `Patient with the same ${conflicts.join(' and ')} already exists`,
+          );
+        }
+
+        const patient = manager.create(Patient, {
+          firstName,
+          lastName,
+          email,
+          phone,
+          doctorPreference,
+        });
+
+        const savedPatient = await manager.save(patient);
+
+        const appointment = manager.create(Appointment, {
+          patient: savedPatient,
+          appointmentDate,
+          description: appointmentDescription,
+          title: appointmentTitle,
+        });
+
+        const savedAppointment = await manager.save(appointment);
+
+        return {
+          patient: savedPatient,
+          appointment: savedAppointment,
+        };
+      });
+    } catch (err: any) {
+      
+      if (err.code === '23505') {
+        throw new ConflictException(
+          'Patient with this email or phone already exists',
+        );
+      }
+
+      throw err;
     }
-
-    const patient = this.patientRepo.create(dto);
-    return this.patientRepo.save(patient);
   }
+
+
 
   async findAll(email?: string): Promise<Patient[]> {
     let patients: Patient[];
