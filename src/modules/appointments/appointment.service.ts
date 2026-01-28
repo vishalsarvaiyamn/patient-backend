@@ -1,7 +1,8 @@
-import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
+import { Injectable, NotFoundException, ConflictException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { DataSource, DeleteResult, Like, Repository } from 'typeorm';
 import { Patient } from '../patients/entities/patient.entity';
+import { CreateAppointmentDto } from './dto/create-appointment-dto';
 
 @Injectable()
 export class AppointmentService {
@@ -11,24 +12,27 @@ export class AppointmentService {
     private readonly dataSource: DataSource
   ) { }
 
-  // async create(dto: CreatePatientDto): Promise<Patient> {
-  //   const existingPatient = await this.patientRepo.findOne({
-  //     where: [{ email: dto.email }, { phone: dto.phone }],
-  //   });
+  async createAppointment(dto: CreateAppointmentDto) {
+    try {
 
-  //   if (existingPatient) {
-  //     const conflicts: string[] = [];
-  //     if (existingPatient?.email === dto.email) conflicts.push('email');
-  //     if (existingPatient.phone === dto.phone) conflicts.push('phone');
+      const result = await this.dataSource.query(
+        `CALL public.sp_create_appointment($1, $2, $3, $4, NULL, NULL, NULL, NULL, NULL, NULL, NULL)`,
+        [dto.title,
+        dto.description,
+        dto.appointmentDate,
+        dto.patientId,]
+      );
 
-  //     throw new ConflictException(
-  //       `Patient with the same ${conflicts.join(' and ')} already exists`,
-  //     );
-  //   }
+      return result[0]
 
-  //   const patient = this.patientRepo.create(dto);
-  //   return this.patientRepo.save(patient);
-  // }
+    } catch (error) {
+      if (error.code === 'P0001') {
+        throw new BadRequestException(error.message);
+      }
+
+      throw error;
+    }
+  }
 
   async findAppointmentByPatientID(id?: number): Promise<Patient> {
     const patient = await this.patientRepo.findOne({
@@ -51,7 +55,7 @@ export class AppointmentService {
   }
 
   async getAppointments(): Promise<Patient> {
-    const patient = this.dataSource.query(`SELECT * FROM patient_appointments_view`);
+    const patient = await this.dataSource.query(`SELECT * FROM patient_appointments_view`);
     console.log('view result', patient)
 
     if (!patient) {

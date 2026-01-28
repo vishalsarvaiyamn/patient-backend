@@ -1,29 +1,30 @@
 import {
+  Body,
   Controller,
   Get,
   Param,
-  ParseIntPipe
+  ParseIntPipe,
+  Post
 } from '@nestjs/common';
 import { AppointmentService } from './appointment.service';
+import { CreateAppointmentDto } from './dto/create-appointment-dto';
 
 @Controller('appointments')
 export class AppointmentController {
   constructor(private readonly appointmentsService: AppointmentService) { }
 
-  // @Post()
-  // create(@Body() dto: CreatePatientDto) {
-  //   return this.patientsService.create(dto);
-  // }
+  @Post()
+  create(@Body() body: CreateAppointmentDto) {
+    return this.appointmentsService.createAppointment(body);
+  }
 
   @Get()
   getAppointments() {
-    console.log('all data')
     return this.appointmentsService.getAppointments();
   }
 
   @Get(':patientId')
   findAppointmentByPatientID(@Param('patientId', ParseIntPipe) patientId: number) {
-    console.log('with id')
     return this.appointmentsService.findAppointmentByPatientID(patientId);
   }
 
