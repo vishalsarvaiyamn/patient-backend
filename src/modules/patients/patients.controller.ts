@@ -12,14 +12,20 @@ import {
 import { PatientsService } from './patients.service';
 import { CreatePatientDto } from './dto/create-patient.dto';
 import { UpdatePatientDto } from './dto/update-patient.dto';
+import { CreatePatientAppointmentDto } from './dto/create-patient-appointment.dto';
 
 @Controller('patients')
 export class PatientsController {
-  constructor(private readonly patientsService: PatientsService) {}
+  constructor(private readonly patientsService: PatientsService) { }
 
   @Post()
   create(@Body() dto: CreatePatientDto) {
     return this.patientsService.create(dto);
+  }
+
+  @Post('/new-patient-appointment')
+  createNewPatientAppointment(@Body() dto: CreatePatientAppointmentDto) {
+    return this.patientsService.createNewPatientAppointment(dto);
   }
 
   @Get()

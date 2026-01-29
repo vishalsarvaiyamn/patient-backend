@@ -13,6 +13,6 @@ export class CreateAppointmentDto {
   appointmentDate: string;
 
   @IsInt()
-  @IsNotEmpty()
+  @IsNotEmpty() 
   patientId: number;
 }
