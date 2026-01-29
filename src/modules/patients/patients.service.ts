@@ -5,6 +5,7 @@ import { Patient } from './entities/patient.entity';
 import { CreatePatientDto } from './dto/create-patient.dto';
 import { UpdatePatientDto } from './dto/update-patient.dto';
 import { Appointment } from '../appointments/entities/appointment.entity';
+import { CreatePatientAppointmentDto } from './dto/create-patient-appointment.dto';
 
 @Injectable()
 export class PatientsService {
@@ -14,8 +15,27 @@ export class PatientsService {
     private readonly dataSource: DataSource,
   ) { }
 
-  async create(
-    dto: CreatePatientDto,
+  async create(dto: CreatePatientDto): Promise<Patient> {
+    const existingPatient = await this.patientRepo.findOne({
+      where: [{ email: dto.email }, { phone: dto.phone }],
+    });
+
+    if (existingPatient) {
+      const conflicts: string[] = [];
+      if (existingPatient?.email === dto.email) conflicts.push('email');
+      if (existingPatient.phone === dto.phone) conflicts.push('phone');
+
+      throw new ConflictException(
+        `Patient with the same ${conflicts.join(' and ')} already exists`,
+      );
+    }
+
+    const patient = this.patientRepo.create(dto);
+    return this.patientRepo.save(patient);
+  }
+
+  async createNewPatientAppointment(
+    dto: CreatePatientAppointmentDto,
   ): Promise<{ patient: Patient; appointment: Appointment }> {
     const {
       firstName,

@@ -1,5 +1,4 @@
-import { Type } from 'class-transformer';
-import { IsDate, IsEmail, IsNotEmpty, IsString } from 'class-validator';
+import { IsEmail, IsNotEmpty, IsString } from 'class-validator';
 
 export class CreatePatientDto {
   @IsString()
@@ -18,20 +17,6 @@ export class CreatePatientDto {
   phone: string;
 
   @IsString()
-  @IsNotEmpty()
   doctorPreference: string;
-
-  @IsString()
-  @IsNotEmpty()
-  appointmentTitle: string;
-
-  @IsString()
-  @IsNotEmpty()
-  appointmentDescription: string;
-
-  @Type(() => Date)
-  @IsDate()
-  @IsNotEmpty()
-  appointmentDate: Date;
 }
  
